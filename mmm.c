@@ -11,7 +11,79 @@
  */
 void mmm_init()
 {
-	// TODO
+	A = (double**) malloc(sizeof(double*) * MATRIX_SIZE);
+	B = (double**) malloc(sizeof(double*) * MATRIX_SIZE);
+	C = (double**) malloc(sizeof(double*) * MATRIX_SIZE);
+ 	verifyMatrix = (double**) malloc(sizeof(double*) * MATRIX_SIZE);
+	
+	time_t t;
+	srand((unsigned) time(&t));
+
+	for(int i=0; i<MATRIX_SIZE; i++){
+		double *aRow = (double *) malloc(sizeof(double) * MATRIX_SIZE);
+		double *bRow = (double *) malloc(sizeof(double) * MATRIX_SIZE);
+		double *cRow = (double *) malloc(sizeof(double) * MATRIX_SIZE);
+		double *vRow = (double *) malloc(sizeof(double) * MATRIX_SIZE);
+
+		for(int j=0; j<MATRIX_SIZE; j++){
+			double num1 = (double) (rand() % 100);
+			double num2 = (double) (rand() % 100);
+
+			aRow[j] = num1;
+			bRow[j] = num2;
+			cRow[j] = (double) 0;
+			vRow[j] = (double) 0;
+		}
+
+		A[i] = aRow;
+		B[i] = bRow;
+		C[i] = cRow;
+		verifyMatrix[i] = vRow;
+	}
+	
+}
+
+/**
+ * Prints out the contents of the arrays
+ * 
+ */
+void mmm_print()
+{
+	printf("A\n");
+	for(int i=0; i<MATRIX_SIZE; i++){
+		printf("[");
+		for(int j=0; j<MATRIX_SIZE; j++){
+			double val = A[i][j];
+			printf("%f, ", val);
+		}
+		printf("]\n");
+	}
+
+	printf("\n\n\n");
+
+	printf("B\n");
+	for(int i=0; i<MATRIX_SIZE; i++){
+		printf("[");
+		for(int j=0; j<MATRIX_SIZE; j++){
+			double val = B[i][j];
+			printf("%f, ", val);
+		}
+		printf("]\n");
+	}
+
+	printf("\n\n\n");
+
+	printf("C\n");
+	for(int i=0; i<MATRIX_SIZE; i++){
+		printf("[");
+		for(int j=0; j<MATRIX_SIZE; j++){
+			double val = C[i][j];
+			printf("%f, ", val);
+		}
+		printf("]\n");
+	}
+
+
 }
 
 /**
@@ -20,7 +92,11 @@ void mmm_init()
  */
 void mmm_reset(double **matrix)
 {
-	// TODO
+	for(int i=0; i<MATRIX_SIZE; i++){
+		for(int j=0; j<MATRIX_SIZE; j++){
+			matrix[i][j] = 0;
+		}
+	}
 }
 
 /**
@@ -28,15 +104,27 @@ void mmm_reset(double **matrix)
  */
 void mmm_freeup()
 {
-	// TODO
+	free(A);
+	free(B);
+	free(C);
 }
+
 
 /**
  * Sequential MMM
  */
 void mmm_seq()
 {
-	// TODO - code to perform sequential MMM
+	for(int i=0; i<MATRIX_SIZE; i++){
+		for(int j=0; j<MATRIX_SIZE; j++){
+			double value = 0;
+
+			for(int k=0; k<MATRIX_SIZE; k++){
+				value += A[i][k] * B[k][j];
+			}
+			C[i][j] = value;
+		}
+	}
 }
 
 /**
@@ -44,7 +132,22 @@ void mmm_seq()
  */
 void *mmm_par(void *args)
 {
-	// TODO - code to perform parallel MMM
+	// cast input as struct thread_args
+  	thread_args *params = (thread_args *)args;
+
+	int begin = params->rowBegin;
+	int end = params->rowEnd;
+
+	for(int i=begin; i<end; i++){
+		for(int j=0; j<MATRIX_SIZE; j++){
+			double value = 0;
+
+			for(int k=0; k<MATRIX_SIZE; k++){
+				value += A[i][k] * B[k][j];
+			}
+			C[i][j] = value;
+		}
+	}
 }
 
 /**
@@ -56,6 +159,17 @@ void *mmm_par(void *args)
  */
 double mmm_verify()
 {
-	// TODO
-	return -1;
+	double largestError = (double) 0;
+	for(int i=0; i<MATRIX_SIZE; i++){
+		for(int j=0; j<MATRIX_SIZE; j++){
+			double seqVal = verifyMatrix[i][j];
+			double parVal = C[i][j];
+
+			double absDif = abs(parVal - seqVal);
+			if(absDif > largestError){
+				largestError = absDif;
+			}
+		}
+	}
+	return largestError;
 }
